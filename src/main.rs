@@ -24,6 +24,8 @@ struct Args {
     quality: f32,
     #[arg(short, long, default_value_t = 2)]
     threads: usize,
+    #[arg(short, long)]
+    lossless: bool
 }
 
 pub fn create_parent_dirs<P: AsRef<Path>>(file_path: P) -> io::Result<()> {
@@ -46,8 +48,7 @@ pub fn create_parent_dirs<P: AsRef<Path>>(file_path: P) -> io::Result<()> {
 // );
 
 
-#[tokio::main]
-async fn main() {
+async fn start() {
     let args = Args::parse();
     let mut path_to_process = PathBuf::from(&args.path);
     let mut path_to_output = PathBuf::new();
@@ -70,8 +71,11 @@ async fn main() {
     println!("输入路径：{:?}", &path_to_process);
     println!("图片数量：{}", img_vec.len());
     println!("输出路径：{:?}", &path_to_output);
-    println!("质量：{}", args.quality);
-    println!("线程数：{}",args.threads);
+    println!("无损：{:?}", args.lossless);
+    if args.lossless==false {
+        println!("质量：{}", args.quality);
+    }
+    println!("线程数：{}", args.threads);
     print!("Press Enter to continue...");
     io::stdout().flush().unwrap();  // 确保提示立即输出
 
@@ -139,7 +143,7 @@ async fn main() {
             }
 
             // 执行图像转换
-            let result = image_processer::image_to_webp(&ifo_full_path, &export_full_path, args.quality);
+            let result = image_processer::image_to_webp(&ifo_full_path, &export_full_path, args.quality, args.lossless);
             let mut processed = processed_count.lock().unwrap();
             *processed += 1;
             match result {
@@ -162,4 +166,9 @@ async fn main() {
     let duration = start.elapsed();
     println!("Function execution took: {:?}", duration);
     println!("Completed! skipped: {}, processed: {}", *skipped, *processed);
+}
+
+#[tokio::main]
+async fn main() {
+    start().await;
 }
